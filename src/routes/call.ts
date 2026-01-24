@@ -31,6 +31,10 @@ router.post('/', async (req: Request, res: Response) => {
 router.patch('/:id/assign', async (req: Request, res: Response) => {
   const { assignedToId } = req.body;
 
+    let id = req.params.id;
+
+  // Ensure id is a string
+  if (Array.isArray(id)) id = id[0];
   if (!assignedToId) {
     return res.status(400).json({ error: 'assignedToId is required' });
   }
@@ -47,7 +51,7 @@ router.patch('/:id/assign', async (req: Request, res: Response) => {
 
     // Update the call
     const call = await prisma.call.update({
-      where: { id: req.params.id },
+      where: { id},
       data: {
         assignedToId,
         assignedAt: new Date(),
@@ -68,7 +72,7 @@ router.patch('/:id/assign', async (req: Request, res: Response) => {
         <p><strong>Customer:</strong> ${call.customer.name}</p>
         <p><strong>Machine Serial:</strong> ${call.machine?.serialNumber || 'N/A'}</p>
         <p><strong>Description:</strong> ${call.description}</p>
-        <p><strong>Assigned At:</strong> ${call.assignedAt.toLocaleString()}</p>
+        <p><strong>Assigned At:</strong> ${call.assignedAt?.toLocaleString()}</p>
         <p>— Maintenance System</p>
       `,
     });

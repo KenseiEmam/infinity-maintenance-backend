@@ -24,11 +24,11 @@ app.use(express.json());
 app.use(authenticateApp)
 // ==================== API ROUTES ====================
 app.use('/api/users', userRoutes);
-app.use('/customer', customerRoutes);
-app.use('/machine', machineRoutes);
-app.use('/call', callRoutes);
-app.use('/job-sheet', jobSheetRoutes);
-app.use('/scheduled-visit', scheduledVisitRoutes);
+app.use('/api/customer', customerRoutes);
+app.use('/api/machine', machineRoutes);
+app.use('/api/call', callRoutes);
+app.use('/api/job-sheet', jobSheetRoutes);
+app.use('/api/scheduled-visit', scheduledVisitRoutes);
 app.use("/api/email", emailRoutes)
 
 // ==================== SERVER ==================== 

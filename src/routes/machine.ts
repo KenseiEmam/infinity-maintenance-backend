@@ -45,4 +45,78 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// -------------------------
+// GET Single Machine
+// -------------------------
+router.get('/:id', async (req: Request, res: Response) => {
+  let id = req.params.id;
+  if (Array.isArray(id)) id = id[0];
+  if (!id) return res.status(400).json({ error: 'Machine ID is required' });
+
+  try {
+    const machine = await prisma.machine.findUnique({
+      where: { id },
+      include: {
+        customer: true,
+        model: { include: { manufacturer: true } },
+        jobSheets: true,
+        calls: true,
+        scheduledVisits: true,
+      },
+    });
+
+    if (!machine) return res.status(404).json({ error: 'Machine not found' });
+
+    res.json(machine);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------------
+// UPDATE Machine
+// -------------------------
+router.patch('/:id', async (req: Request, res: Response) => {
+  let id = req.params.id;
+  if (Array.isArray(id)) id = id[0];
+  if (!id) return res.status(400).json({ error: 'Machine ID is required' });
+
+  try {
+    const machine = await prisma.machine.update({
+      where: { id },
+      data: req.body, // partial updates allowed
+      include: {
+        customer: true,
+        model: { include: { manufacturer: true } },
+      },
+    });
+
+    res.json(machine);
+  } catch (err: any) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Machine not found' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// -------------------------
+// DELETE Machine
+// -------------------------
+router.delete('/:id', async (req: Request, res: Response) => {
+  let id = req.params.id;
+  if (Array.isArray(id)) id = id[0];
+  if (!id) return res.status(400).json({ error: 'Machine ID is required' });
+
+  try {
+    await prisma.machine.delete({ where: { id } });
+    res.status(204).send();
+  } catch (err: any) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'Machine not found' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

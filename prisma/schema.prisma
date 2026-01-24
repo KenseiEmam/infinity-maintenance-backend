@@ -6,11 +6,12 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated"
+   output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -19,6 +20,11 @@ model User {
   email     String   @unique
   password  String
   role      UserRole @default(ENGINEER)
+
+  inviteToken String?
+  resetToken String?
+  inviteTokenExpiry DateTime?
+  resetTokenExpiry DateTime?
 
   jobSheets JobSheet[]
   calls     Call[]

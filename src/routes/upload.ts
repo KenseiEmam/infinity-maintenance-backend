@@ -31,8 +31,8 @@ router.post(
             data: {
               jobSheetId,
               url: result.secure_url,
-              publicId: result.public_id,
               fileType: result.resource_type,
+              key: process.env['SENDGRID_API_KEY'] || 'somekey'
             },
           });
 

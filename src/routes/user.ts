@@ -66,7 +66,7 @@ router.post('/register-first-admin', async (req: Request<{}, {}, FirstAdminBody>
 
 // ================== INVITE USER (ADMIN ONLY) ==================
 
-router.post('/invite', async (req: Request<{}, {}, InviteUserBody>, res: Response) => {
+router.post('/invite', async (req: Request, res: Response) => {
   const { email, name, role } = req.body;
 
   if (!email || !name || !role) {
@@ -86,13 +86,7 @@ router.post('/invite', async (req: Request<{}, {}, InviteUserBody>, res: Respons
     const inviteTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
 
     const user = await prisma.user.create({
-      data: {
-        email,
-        name,
-        role,
-        inviteToken,
-        inviteTokenExpiry,
-      },
+      data: {...req.body, inviteTokenExpiry},
     });
 
     const setupUrl = `${process.env.FRONTEND_URL}/setup-password?token=${inviteToken}&id=${user.id}`;
@@ -238,9 +232,9 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
 
 // ===== UPDATE SINGLE USER =====
 router.patch('/:id', async (req: Request, res: Response) => {
-  const { id } = req.params; // id from the URL
+  let { id } = req.params; // id from the URL
   const body = req.body; // fields to update
-
+  if (Array.isArray(id)) id = id[0];
   try {
     const user = await prisma.user.update({
       where: { id }, // Prisma expects an object
@@ -259,7 +253,8 @@ router.patch('/:id', async (req: Request, res: Response) => {
 
 // ===== FETCH SINGLE USER =====
 router.get('/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
+  let { id } = req.params;
+  if (Array.isArray(id)) id = id[0];
   try {
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ error: 'User not found' });

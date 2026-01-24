@@ -32,11 +32,17 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 });
 
-// GET single customer
 router.get('/:id', async (req: Request, res: Response) => {
+  let id = req.params.id;
+
+  // Ensure id is a string
+  if (Array.isArray(id)) id = id[0];
+
+  if (!id) return res.status(400).json({ error: 'Customer ID is required' });
+
   try {
     const customer = await prisma.customer.findUnique({
-      where: { id: req.params.id },
+      where: { id },
     });
     if (!customer) return res.status(404).json({ error: 'Customer not found' });
     res.json(customer);
@@ -44,5 +50,6 @@ router.get('/:id', async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 export default router;
