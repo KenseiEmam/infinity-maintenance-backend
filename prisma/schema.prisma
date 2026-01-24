@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(ENGINEER)
+
+  jobSheets JobSheet[]
+  calls     Call[]
+
+  createdAt DateTime @default(now())
+}
+
+enum UserRole {
+  ADMIN
+  ENGINEER
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+
+  machines  Machine[]
+  calls     Call[]
+  jobSheets JobSheet[]
+
+  createdAt DateTime @default(now())
+}
+
+model Manufacturer {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  models Model[]
+}
+
+model Model {
+  id             String        @id @default(uuid())
+  name           String
+  manufacturerId String
+  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id])
+
+  machines       Machine[]
+
+  @@unique([name, manufacturerId])
+}
+
+model Machine {
+  id             String   @id @default(uuid())
+  serialNumber   String   @unique
+  customerId     String
+  modelId        String
+  underWarranty  Boolean  @default(false)
+
+  customer       Customer @relation(fields: [customerId], references: [id])
+  model          Model    @relation(fields: [modelId], references: [id])
+
+  jobSheets      JobSheet[]
+  calls          Call[]
+  scheduledVisits ScheduledVisit[]
+
+  createdAt DateTime @default(now())
+}
+
+model Call {
+  id             String   @id @default(uuid())
+  customerId     String
+  machineId      String?
+  description    String
+
+  callTime       DateTime @default(now())
+  assignedAt     DateTime?
+  assignedToId   String?
+
+  customer       Customer @relation(fields: [customerId], references: [id])
+  machine        Machine? @relation(fields: [machineId], references: [id])
+  assignedTo     User?    @relation(fields: [assignedToId], references: [id])
+
+  createdAt      DateTime @default(now())
+}
+
+model JobSheet {
+  id               String   @id @default(uuid())
+  purchaseOrderNo  String?
+  date             DateTime
+
+  customerId       String
+  machineId        String
+  engineerId       String
+
+  checkInTime      DateTime?
+  arrivalTime      DateTime?
+  completionTime   DateTime?
+  labourTimeMin    Int?
+
+  problemFound     String?
+  workReport       String?
+
+  total            Float    @default(0)
+  totalAfterDisc   Float    @default(0)
+
+  customerName     String
+  customerSignature String?
+
+  customer         Customer @relation(fields: [customerId], references: [id])
+  machine          Machine  @relation(fields: [machineId], references: [id])
+  engineer         User     @relation(fields: [engineerId], references: [id])
+
+  laserData        LaserData[]
+  spareParts       SparePart[]
+  attachments      Attachment[]
+
+  createdAt        DateTime @default(now())
+}
+
+model LaserData {
+  id         String   @id @default(uuid())
+  jobSheetId String
+
+  laserType  String
+  lampCounter Int?
+  voltage    Float?
+
+  jobSheet   JobSheet @relation(fields: [jobSheetId], references: [id])
+}
+
+model SparePart {
+  id         String   @id @default(uuid())
+  jobSheetId String
+
+  itemName   String
+  quantity   Int
+  price      Float
+
+  jobSheet   JobSheet @relation(fields: [jobSheetId], references: [id])
+}
+model Attachment {
+  id         String   @id @default(uuid())
+  jobSheetId String
+
+  url        String
+  fileType   String
+  key        String   // S3 object key
+
+  jobSheet   JobSheet @relation(fields: [jobSheetId], references: [id])
+
+  createdAt  DateTime @default(now())
+}
+
+
+model ScheduledVisit {
+  id          String   @id @default(uuid())
+  machineId   String
+  visitDate   DateTime
+  notes       String?
+
+  machine     Machine @relation(fields: [machineId], references: [id])
+
+  createdAt   DateTime @default(now())
+}
