@@ -197,7 +197,6 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     const user = await prisma.user.findFirst({
       where: { email: { equals: email, mode: 'insensitive' } },
     });
-
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -227,7 +226,41 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/reset-password', async (req: Request, res: Response) => {
+  const { userId, token, newPassword } = req.body;
 
+  if (!userId || !token || !newPassword) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (
+      !user ||
+      user.resetToken !== token ||
+      !user.resetTokenExpiry ||
+      user.resetTokenExpiry < new Date()
+    ) {
+      return res.status(400).json({ error: 'Invalid or expired reset link' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+
+    res.json({ success: true, message: 'Password set successfully' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 // ===== UPDATE SINGLE USER =====
