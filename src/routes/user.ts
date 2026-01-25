@@ -57,7 +57,7 @@ router.post('/register-first-admin', async (req: Request<{}, {}, FirstAdminBody>
       },
     });
 
-    res.status(201).json({ id: admin.id, message: 'Admin created' });
+    res.status(201).json({ data: admin, message: 'Admin created' });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -305,9 +305,21 @@ router.get('/', async (req: Request, res: Response) => {
   const size = parseInt(pageSize as string, 10);
 
   try {
-    const filters: any = {};
-    if (role) filters.role = { hasSome: (role as string).split(',') };
-    if (name) filters.name = { contains: name as string, mode: 'insensitive' };
+   const filters: any = {};
+
+if (role) {
+  filters.role = {
+    in: (role as string).split(','),
+  };
+}
+
+if (name) {
+  filters.name = {
+    contains: name as string,
+    mode: 'insensitive',
+  };
+}
+
 
     const [users, count] = await Promise.all([
       prisma.user.findMany({
