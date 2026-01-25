@@ -83,28 +83,47 @@ router.post('/invite', async (req: Request, res: Response) => {
     }
 
     const inviteToken = crypto.randomBytes(32).toString('hex');
-    const inviteTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24); // 24h
+    const inviteTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24 *8); // 8 days
 
     const user = await prisma.user.create({
-      data: {...req.body, inviteTokenExpiry},
+      data: {...req.body, inviteToken, inviteTokenExpiry},
     });
 
     const setupUrl = `${process.env.FRONTEND_URL}/setup-password?token=${inviteToken}&id=${user.id}`;
 
-    await sendEmail({
+    console.log('📧 EMAIL: about to send');
+    console.log({
       to: user.email,
-      subject: 'You have been invited to the Maintenance System',
-      html: `
-        <p>Hello ${user.name},</p>
-        <p>An administrator has created an account for you.</p>
-        <p>Please click the link below to set your password:</p>
-        <p>
-          <a href="${setupUrl}">Set your password</a>
-        </p>
-        <p>This link expires in 24 hours.</p>
-        <p>— Maintenance System</p>
-      `,
+      name: user.name,
+      setupUrl,
     });
+
+    try {
+      const result = await sendEmail({
+        to: user.email,
+        subject: 'You have been invited to the Maintenance System',
+        html: `
+          <p>Hello ${user.name},</p>
+          <p>An administrator has created an account for you.</p>
+          <p>Please click the link below to set your password:</p>
+          <p>
+            <a href="${setupUrl}">Set your password</a>
+          </p>
+          <p>This link expires in 24 hours.</p>
+          <p>— Maintenance System</p>
+        `,
+      });
+
+      console.log('✅ EMAIL: sent successfully');
+      console.log('📨 EMAIL RESULT:', result);
+    } catch (err: any) {
+      console.error('❌ EMAIL: failed');
+      console.error('RAW ERROR:', err);
+      console.error('ERROR MESSAGE:', err?.message);
+      console.error('STACK:', err?.stack);
+
+      // IMPORTANT: do NOT throw yet
+    }
 
     res.status(201).json({ message: 'User invited successfully' });
   } catch (err: any) {

@@ -22,7 +22,7 @@ export async function sendEmail({
 }) {
   return transporter.sendMail({
     from: {
-      email: 'admin@infinitymedicalkwt.com',
+      email: 'kuwait@infinitymedicalkwt.com',
       name: 'Infinity Medical Kuwait',
     },
     to,
