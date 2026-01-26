@@ -41,6 +41,7 @@ model Customer {
   id        String   @id @default(uuid())
   name      String
   address   String?
+  phone     String?
 
   machines  Machine[]
   calls     Call[]

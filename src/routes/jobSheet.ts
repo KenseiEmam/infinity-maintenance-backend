@@ -37,16 +37,22 @@ router.post('/', async (req: Request, res: Response) => {
 // GET job sheets (history)
 // -------------------------
 router.get('/', async (req: Request, res: Response) => {
-  const { customerId, serialNumber } = req.query;
-
+  const { customerId, serialNumber, page = '1', pageSize = '10'} = req.query;
+  const pageNum = parseInt(page as string, 10);
+  const size = parseInt(pageSize as string, 10);
   try {
-    const jobSheets = await prisma.jobSheet.findMany({
-      where: {
-        customerId: customerId as string | undefined,
-        machine: serialNumber
-          ? { serialNumber: { contains: serialNumber as string, mode: 'insensitive' } }
-          : undefined,
-      },
+    const filters: any = {};
+    if(serialNumber)
+    {
+      filters.machine = { serialNumber: { contains: serialNumber as string, mode: 'insensitive' } }
+    }
+    if(customerId)
+    {
+      filters.customerId = customerId as string
+    }
+    const [jobSheets, count] = await Promise.all([prisma.jobSheet.findMany({
+      where: filters
+     ,
       include: {
         customer: true,
         machine: true,
@@ -56,9 +62,12 @@ router.get('/', async (req: Request, res: Response) => {
         attachments: true,
       },
       orderBy: { createdAt: 'desc' },
-    });
+      skip: (pageNum - 1) * size,
+        take: size,
+    }),  prisma.jobSheet.count({ where: filters })]);
 
-    res.json(jobSheets);
+    
+    res.json({jobSheets, count});
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

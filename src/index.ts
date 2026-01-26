@@ -7,6 +7,8 @@ import machineRoutes from './routes/machine';
 import callRoutes from './routes/call';
 import jobSheetRoutes from './routes/jobSheet';
 import scheduledVisitRoutes from './routes/scheduledVisit';
+import modelRoutes from './routes/model';
+import manufacturerRoutes from './routes/manufacturer';
 
 
 import emailRoutes from './routes/email'
@@ -24,11 +26,13 @@ app.use(express.json());
 app.use(authenticateApp)
 // ==================== API ROUTES ====================
 app.use('/api/users', userRoutes);
-app.use('/api/customer', customerRoutes);
-app.use('/api/machine', machineRoutes);
-app.use('/api/call', callRoutes);
-app.use('/api/job-sheet', jobSheetRoutes);
-app.use('/api/scheduled-visit', scheduledVisitRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/machines', machineRoutes);
+app.use('/api/calls', callRoutes);
+app.use('/api/models', modelRoutes);
+app.use('/api/manufacturers', manufacturerRoutes);
+app.use('/api/job-sheets', jobSheetRoutes);
+app.use('/api/scheduled-visits', scheduledVisitRoutes);
 app.use("/api/email", emailRoutes)
 
 // ==================== SERVER ==================== 

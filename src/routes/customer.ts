@@ -5,13 +5,13 @@ const router = Router();
 
 // CREATE customer
 router.post('/', async (req: Request, res: Response) => {
-  const { name, address } = req.body;
+  const { name, address, phone } = req.body;
 
   if (!name) return res.status(400).json({ error: 'Customer name is required' });
 
   try {
     const customer = await prisma.customer.create({
-      data: { name, address },
+      data: { name, address, phone },
     });
 
     res.status(201).json(customer);
@@ -19,14 +19,35 @@ router.post('/', async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message });
   }
 });
+// update customer
+router.patch('/', async (req: Request, res: Response) => {
+  const { id, name, address, phone } = req.body;
+   if (!id) return res.status(400).json({ error: 'Customer id is required' });
+  if (!name) return res.status(400).json({ error: 'Customer name is required' });
 
+  try {
+    const customer = await prisma.customer.update({ where: { id },
+      data: { name, address, phone },
+    });
+
+    res.status(201).json(customer);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 // GET all customers
 router.get('/', async (_req: Request, res: Response) => {
+  const { page = '1', pageSize = '10'} = _req.query;
+  const pageNum = parseInt(page as string, 10);
+  const size = parseInt(pageSize as string, 10);
   try {
-    const customers = await prisma.customer.findMany({
+    const [customers, count] = await Promise.all([
+      prisma.customer.findMany({ skip: (pageNum - 1) * size,
+        take: size,
       orderBy: { name: 'asc' },
-    });
-    res.json(customers);
+    }), prisma.customer.count()
+    ]);
+    res.json({customers,count});
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
