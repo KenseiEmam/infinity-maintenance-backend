@@ -11,7 +11,7 @@ router.post(
   upload.single('file'),
   async (req: Request, res: Response) => {
     const { jobSheetId } = req.body;
-
+    
     if (!req.file || !jobSheetId) {
       return res.status(400).json({ error: 'Missing file or jobSheetId' });
     }
@@ -35,6 +35,7 @@ router.post(
               key: process.env['SENDGRID_API_KEY'] || 'somekey'
             },
           });
+          
 
           res.status(201).json(attachment);
         }
@@ -42,9 +43,30 @@ router.post(
 
       result.end(req.file.buffer);
     } catch (err: any) {
+      console.log(err)
       res.status(500).json({ error: err.message });
     }
   }
 );
+
+router.get('/', async (req: Request, res: Response) => {
+  const { jobSheetId } = req.query
+
+  if (!jobSheetId || typeof jobSheetId !== 'string') {
+    return res.status(400).json({ error: 'jobSheetId is required' })
+  }
+
+  try {
+    const attachments = await prisma.attachment.findMany({
+      where: { jobSheetId },
+      orderBy: { createdAt: 'asc' },
+    })
+
+    res.json(attachments)
+  } catch (err: any) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 
 export default router;

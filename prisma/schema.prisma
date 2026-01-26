@@ -121,7 +121,6 @@ model JobSheet {
   total            Float    @default(0)
   totalAfterDisc   Float    @default(0)
 
-  customerName     String
   customerSignature String?
 
   customer         Customer @relation(fields: [customerId], references: [id])

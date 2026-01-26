@@ -1,6 +1,7 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import userRoutes from './routes/user';
 import customerRoutes from './routes/customer';
 import machineRoutes from './routes/machine';
@@ -9,6 +10,7 @@ import jobSheetRoutes from './routes/jobSheet';
 import scheduledVisitRoutes from './routes/scheduledVisit';
 import modelRoutes from './routes/model';
 import manufacturerRoutes from './routes/manufacturer';
+import uploadRoutes from './routes/upload';
 
 
 import emailRoutes from './routes/email'
@@ -16,7 +18,7 @@ import { authenticateApp } from "./auth"
 
 import './cron'
 
-dotenv.config();
+
 
 const app = express();
 app.use(cors());
@@ -34,6 +36,7 @@ app.use('/api/manufacturers', manufacturerRoutes);
 app.use('/api/job-sheets', jobSheetRoutes);
 app.use('/api/scheduled-visits', scheduledVisitRoutes);
 app.use("/api/email", emailRoutes)
+app.use("/api/attachments", uploadRoutes)
 
 // ==================== SERVER ==================== 
 const PORT = process.env.PORT || 4000;
