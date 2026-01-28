@@ -8,13 +8,35 @@ const router = Router();
 // CREATE Scheduled Visit
 // -------------------------
 router.post('/', async (req: Request, res: Response) => {
-  let { machineId, visitDate, notes } = req.body;
+  let { machineId, visitDate, notes } = req.body
 
   if (!machineId || !visitDate) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: 'Missing required fields' })
   }
 
   try {
+    const start = new Date(visitDate)
+    start.setHours(0, 0, 0, 0)
+
+    const end = new Date(start)
+    end.setHours(23, 59, 59, 999)
+
+    // 🔥 Prevent duplicate bookings for the same day
+    const existing = await prisma.scheduledVisit.findFirst({
+      where: {
+        visitDate: {
+          gte: start,
+          lte: end,
+        },
+      },
+    })
+
+    if (existing) {
+      return res.status(409).json({
+        error: 'This date is already booked',
+      })
+    }
+
     const visit = await prisma.scheduledVisit.create({
       data: {
         machineId,
@@ -24,43 +46,73 @@ router.post('/', async (req: Request, res: Response) => {
       include: {
         machine: { include: { customer: true } },
       },
-    });
+    })
 
-    // send notification email
     await sendEmail({
-      to: "maintenance@infinitymedicalkwt.com",
+      to: 'maintenance@infinitymedicalkwt.com',
       subject: 'A new booking was scheduled!',
       html: `
         <p>Hello Team,</p>
-        <p>A new visit for Machine ${visit.machine.serialNumber} (Customer: ${visit.machine.customer.name}) has been booked on ${visit.visitDate.toLocaleDateString('en', { day: "2-digit", month: "short", year: 'numeric' })}.</p>
+        <p>A new visit for Machine ${visit.machine.serialNumber} (Customer: ${visit.machine.customer.name}) has been booked on ${visit.visitDate.toLocaleDateString(
+          'en',
+          { day: '2-digit', month: 'short', year: 'numeric' },
+        )}.</p>
         <p>Notes if any: ${notes || 'None'}</p>
         <p>— Maintenance System</p>
       `,
-    });
+    })
 
-    res.status(201).json(visit);
+    res.status(201).json(visit)
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message })
   }
-});
+})
+
 
 // -------------------------
 // GET All Scheduled Visits
 // -------------------------
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const visits = await prisma.scheduledVisit.findMany({
-      include: {
-        machine: { include: { customer: true } },
-      },
-      orderBy: { visitDate: 'asc' },
-    });
+    const { visitDate, page = '1', pageSize = '10' } = req.query
 
-    res.json(visits);
+    const pageNum = parseInt(page as string, 10)
+    const size = parseInt(pageSize as string, 10)
+
+    let where: any = {}
+
+    if (visitDate) {
+      const start = new Date(visitDate as string)
+      start.setHours(0, 0, 0, 0)
+
+      const end = new Date(start)
+      end.setHours(23, 59, 59, 999)
+
+      where.visitDate = {
+        gte: start,
+        lte: end,
+      }
+    }
+
+    const [visits, count] = await Promise.all([
+      prisma.scheduledVisit.findMany({
+        where,
+        include: {
+          machine: { include: { customer: true } },
+        },
+        orderBy: { visitDate: 'asc' },
+        take: size,
+        skip: (pageNum - 1) * size,
+      }),
+      prisma.scheduledVisit.count({ where }),
+    ])
+
+    res.json({ visits, count })
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message })
   }
-});
+})
+
 
 // -------------------------
 // GET Single Visit

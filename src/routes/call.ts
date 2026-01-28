@@ -6,8 +6,8 @@ const router = Router();
 
 // CREATE call
 router.post('/', async (req: Request, res: Response) => {
-  const { customerId, machineId, description } = req.body;
-
+  const { customerId, machineId, description, callTime, assignedTo } = req.body;
+  
   if (!customerId || !description) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -15,6 +15,7 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const call = await prisma.call.create({
       data: {
+        callTime: callTime ? new Date(callTime) : undefined,
         customerId,
         machineId,
         description,
@@ -88,19 +89,49 @@ router.patch('/:id/assign', async (req: Request, res: Response) => {
 // GET calls
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const calls = await prisma.call.findMany({
+     const { page = '1', pageSize = '10'} = _req.query;
+  const pageNum = parseInt(page as string, 10);
+  const size = parseInt(pageSize as string, 10);
+    const [calls,count] = await Promise.all([
+      prisma.call.findMany({
+        skip: (pageNum - 1) * size,
+        take: size,
       include: {
         customer: true,
         machine: true,
         assignedTo: true,
       },
       orderBy: { callTime: 'desc' },
-    });
+    }),
+    prisma.call.count()
+    ])
 
-    res.json(calls);
+    res.json({calls, count});
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
+router.get('/:id', async (req: Request, res: Response) => {
+  let id = req.params.id;
 
+  // Ensure id is a string
+  if (Array.isArray(id)) id = id[0];
+
+  if (!id) return res.status(400).json({ error: 'Call ID is required' });
+
+  try {
+    const call = await prisma.call.findUnique({
+      where: { id },
+        include: {
+        customer: true,
+        machine: true,
+        assignedTo: true,
+      },
+    });
+    if (!call) return res.status(404).json({ error: 'Call not found' });
+    res.json(call);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
 export default router;

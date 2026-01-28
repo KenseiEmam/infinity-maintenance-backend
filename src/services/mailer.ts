@@ -1,10 +1,10 @@
-const nodemailer = require("nodemailer");
+const nodemailer = require('nodemailer')
 const sgTransport = require('nodemailer-sendgrid')
 
 const transporter = nodemailer.createTransport(
   sgTransport({
     apiKey: process.env.SENDGRID_API_KEY,
-  })
+  }),
 )
 
 export async function sendEmail({
@@ -21,14 +21,11 @@ export async function sendEmail({
   replyTo?: string
 }) {
   return transporter.sendMail({
-    from: {
-      email: 'kuwait@infinitymedicalkwt.com',
-      name: 'Infinity Medical Kuwait',
-    },
+    from: 'Infinity Medical Kuwait <kuwait@infinitymedicalkwt.com>',
     to,
     subject,
     text,
     html,
-    replyTo,
+    ...(replyTo ? { replyTo } : {}),
   })
 }
