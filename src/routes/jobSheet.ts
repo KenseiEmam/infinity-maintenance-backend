@@ -38,19 +38,24 @@ router.post('/', async (req: Request, res: Response) => {
 // GET job sheets (history)
 // -------------------------
 router.get('/', async (req: Request, res: Response) => {
-  const { customerId, serialNumber, page = '1', pageSize = '10'} = req.query;
+  const { customerName, serialNumber, page = '1', pageSize = '10'} = req.query;
   const pageNum = parseInt(page as string, 10);
   const size = parseInt(pageSize as string, 10);
   try {
     const filters: any = {};
-    if(serialNumber)
-    {
-      filters.machine = { serialNumber: { contains: serialNumber as string, mode: 'insensitive' } }
+
+    if (serialNumber) {
+      filters.machine = {
+        serialNumber: { contains: serialNumber as string, mode: 'insensitive' },
+      }
     }
-    if(customerId)
-    {
-      filters.customerId = customerId as string
+
+    if (customerName) {
+      filters.customer = {
+        name: { contains: customerName as string, mode: 'insensitive' },
+      }
     }
+
     const [jobSheets, count] = await Promise.all([prisma.jobSheet.findMany({
       where: filters
      ,
@@ -111,14 +116,24 @@ router.patch('/:id', async (req: Request, res: Response) => {
   if (Array.isArray(id)) id = id[0];
   if (!id) return res.status(400).json({ error: 'Job Sheet ID is required' });
 
-  const { spareParts, laserData, ...jobSheetData } = req.body;
+  const { spareParts, laserData,  customerId,
+          machineId,
+          engineerId,
+          attachments,
+          customer,
+          engineer,
+          machine,
+          createdAt,
+          id:idont,...jobSheetData } = req.body;
 
   try {
     const jobSheet = await prisma.jobSheet.update({
       where: { id },
       data: {
         ...jobSheetData,
-        // For spareParts: optional, use `upsert` to update existing or create new
+        ...(customerId && { customer: { connect: { id: customerId } } }),
+    ...(machineId && { machine: { connect: { id: machineId } } }),
+    ...(engineerId && { engineer: { connect: { id: engineerId } } }),
         spareParts: spareParts
           ? {
               upsert: spareParts.map((sp: any) => ({
