@@ -1,12 +1,9 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
-   output   = "../src/generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -60,7 +57,7 @@ model Model {
   id             String        @id @default(uuid())
   name           String
   manufacturerId String
-  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id])
+  manufacturer   Manufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
 
   machines       Machine[]
 
@@ -74,8 +71,8 @@ model Machine {
   modelId        String
   underWarranty  Boolean  @default(false)
 
-  customer       Customer @relation(fields: [customerId], references: [id])
-  model          Model    @relation(fields: [modelId], references: [id])
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  model          Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
   jobSheets      JobSheet[]
   calls          Call[]
@@ -94,9 +91,9 @@ model Call {
   assignedAt     DateTime?
   assignedToId   String?
 
-  customer       Customer @relation(fields: [customerId], references: [id])
-  machine        Machine? @relation(fields: [machineId], references: [id])
-  assignedTo     User?    @relation(fields: [assignedToId], references: [id])
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  machine        Machine? @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  assignedTo     User?    @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
 
   createdAt      DateTime @default(now())
 }
@@ -123,9 +120,9 @@ model JobSheet {
 
   customerSignature String?
 
-  customer         Customer @relation(fields: [customerId], references: [id])
-  machine          Machine  @relation(fields: [machineId], references: [id])
-  engineer         User     @relation(fields: [engineerId], references: [id])
+  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  machine          Machine  @relation(fields: [machineId], references: [id], onDelete: Cascade)
+  engineer         User     @relation(fields: [engineerId], references: [id], onDelete: Cascade)
 
   laserData        LaserData[]
   spareParts       SparePart[]
@@ -142,7 +139,7 @@ model LaserData {
   lampCounter Int?
   voltage    Float?
 
-  jobSheet   JobSheet @relation(fields: [jobSheetId], references: [id])
+  jobSheet   JobSheet @relation(fields: [jobSheetId], references: [id], onDelete: Cascade)
 }
 
 model SparePart {
@@ -153,8 +150,9 @@ model SparePart {
   quantity   Int
   price      Float
 
-  jobSheet   JobSheet @relation(fields: [jobSheetId], references: [id])
+  jobSheet   JobSheet @relation(fields: [jobSheetId], references: [id], onDelete: Cascade)
 }
+
 model Attachment {
   id         String   @id @default(uuid())
   jobSheetId String
@@ -163,11 +161,10 @@ model Attachment {
   fileType   String
   key        String   // S3 object key
 
-  jobSheet   JobSheet @relation(fields: [jobSheetId], references: [id])
+  jobSheet   JobSheet @relation(fields: [jobSheetId], references: [id], onDelete: Cascade)
 
   createdAt  DateTime @default(now())
 }
-
 
 model ScheduledVisit {
   id          String   @id @default(uuid())
@@ -175,7 +172,7 @@ model ScheduledVisit {
   visitDate   DateTime
   notes       String?
 
-  machine     Machine @relation(fields: [machineId], references: [id])
+  machine     Machine @relation(fields: [machineId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime @default(now())
 }
