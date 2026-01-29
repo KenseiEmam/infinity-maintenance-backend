@@ -95,6 +95,8 @@ model Call {
   machine        Machine? @relation(fields: [machineId], references: [id], onDelete: Cascade)
   assignedTo     User?    @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
 
+  jobSheet       JobSheet?   
+
   createdAt      DateTime @default(now())
 }
 
@@ -114,6 +116,9 @@ model JobSheet {
 
   problemFound     String?
   workReport       String?
+
+  callId           String?  @unique   // ✅ add this
+  call             Call?    @relation(fields: [callId], references: [id], onDelete: SetNull)
 
   total            Float    @default(0)
   totalAfterDisc   Float    @default(0)

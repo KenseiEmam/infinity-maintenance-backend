@@ -100,6 +100,7 @@ router.get('/', async (_req: Request, res: Response) => {
         customer: true,
         machine: true,
         assignedTo: true,
+        jobSheet:true
       },
       orderBy: { callTime: 'desc' },
     }),
@@ -126,6 +127,7 @@ router.get('/:id', async (req: Request, res: Response) => {
         customer: true,
         machine: true,
         assignedTo: true,
+        jobSheet:true
       },
     });
     if (!call) return res.status(404).json({ error: 'Call not found' });

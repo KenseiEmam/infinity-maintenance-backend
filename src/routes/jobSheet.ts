@@ -7,13 +7,14 @@ const router = Router();
 // CREATE job sheet
 // -------------------------
 router.post('/', async (req: Request, res: Response) => {
-  const { spareParts, laserData, ...jobSheetData } = req.body;
+  const { callId, spareParts, laserData, ...jobSheetData } = req.body;
 
   try {
     const jobSheet = await prisma.jobSheet.create({
       data: {
         ...jobSheetData,
         date: new Date(jobSheetData.date),
+        callId: callId || undefined,
         // nested create for spareParts and laserData if provided
         spareParts: spareParts ? { create: spareParts } : undefined,
         laserData: laserData ? { create: laserData } : undefined,
