@@ -78,28 +78,58 @@ router.post('/invite', async (req: Request, res: Response) => {
       where: { email: { equals: email, mode: 'insensitive' } },
     });
 
-    if (existing) {
-      return res.status(409).json({ error: 'Email already exists' });
+    const inviteToken = crypto.randomBytes(32).toString('hex');
+    const inviteTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24 * 8); // 8 days
+
+    let user;
+
+    // =======================
+    // CASE 1: User doesn't exist -> create
+    // =======================
+    if (!existing) {
+      user = await prisma.user.create({
+        data: {
+          email,
+          name,
+          role,
+          inviteToken,
+          inviteTokenExpiry,
+        },
+      });
+    } else {
+      // =======================
+      // CASE 2: User exists
+      // =======================
+
+      // If user already has password => it's a real account
+      if (existing.password) {
+        return res.status(409).json({ error: 'User already registered' });
+      }
+
+      // If token is missing OR expired => regenerate and resend
+      const isExpired =
+        !existing.inviteTokenExpiry || existing.inviteTokenExpiry < new Date();
+
+      if (!existing.inviteToken || isExpired) {
+        user = await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            name, // keep updated if admin changed name
+            role,
+            inviteToken,
+            inviteTokenExpiry,
+          },
+        });
+      } else {
+        // token still valid => just resend same token (no need to change)
+        user = existing;
+      }
     }
 
-    const inviteToken = crypto.randomBytes(32).toString('hex');
-    const inviteTokenExpiry = new Date(Date.now() + 1000 * 60 * 60 * 24 *8); // 8 days
-
-    const user = await prisma.user.create({
-      data: {...req.body, inviteToken, inviteTokenExpiry},
-    });
-
-    const setupUrl = `${process.env.FRONTEND_URL}/setup-password?token=${inviteToken}&id=${user.id}`;
-
-    console.log('📧 EMAIL: about to send');
-    console.log({
-      to: user.email,
-      name: user.name,
-      setupUrl,
-    });
+    const setupUrl = `${process.env.FRONTEND_URL}/setup-password?token=${user.inviteToken}&id=${user.id}`;
 
     try {
-      const result = await sendEmail({
+      await sendEmail({
         to: user.email,
         subject: 'You have been invited to the Maintenance System',
         html: `
@@ -109,27 +139,24 @@ router.post('/invite', async (req: Request, res: Response) => {
           <p>
             <a href="${setupUrl}">Set your password</a>
           </p>
-          <p>This link expires in 24 hours.</p>
+          <p>This link expires in 8 days.</p>
           <p>— Maintenance System</p>
         `,
       });
-
-      console.log('✅ EMAIL: sent successfully');
-      console.log('📨 EMAIL RESULT:', result);
     } catch (err: any) {
-      console.error('❌ EMAIL: failed');
-      console.error('RAW ERROR:', err);
-      console.error('ERROR MESSAGE:', err?.message);
-      console.error('STACK:', err?.stack);
-
-      // IMPORTANT: do NOT throw yet
+      console.error('❌ EMAIL failed:', err?.message);
+      // still return success because user + token updated
     }
 
-    res.status(201).json({ message: 'User invited successfully' });
+    return res.status(200).json({
+      success: true,
+      message: existing ? 'Invite re-sent successfully' : 'User invited successfully',
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 // ================== SET PASSWORD (INVITED USERS) ==================
@@ -357,6 +384,21 @@ if (name) {
     res.json({ users: usersWithoutPasswords, count });
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Failed to fetch users' });
+  }
+});
+// ===== DELETE SINGLE USER =====
+router.delete('/:id', async (req: Request, res: Response) => {
+  let { id } = req.params;
+  if (Array.isArray(id)) id = id[0];
+
+  try {
+    await prisma.user.delete({ where: { id } });
+    res.json({ success: true, message: 'User deleted successfully' });
+  } catch (err: any) {
+    if (err.code === 'P2025') {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.status(500).json({ error: err.message || 'Failed to delete user' });
   }
 });
 
