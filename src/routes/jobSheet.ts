@@ -122,6 +122,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
     laserData = [],
     customerId,
     machineId,
+    serviceType,
     engineerId,
     attachments,
     customer,

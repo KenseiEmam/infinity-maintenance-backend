@@ -33,7 +33,11 @@ enum UserRole {
   ADMIN
   ENGINEER
 }
-
+enum ServiceType {
+  INSTALLATION
+  CONTRACT
+  PAID
+}
 model Customer {
   id        String   @id @default(uuid())
   name      String
@@ -117,6 +121,7 @@ model JobSheet {
   problemFound     String?
   workReport       String?
 
+  serviceType      ServiceType @default(CONTRACT)
   callId           String?  @unique   // ✅ add this
   call             Call?    @relation(fields: [callId], references: [id], onDelete: SetNull)
 
@@ -154,6 +159,7 @@ model SparePart {
   itemName   String
   quantity   Int
   price      Float
+  discounted Float?
 
   jobSheet   JobSheet @relation(fields: [jobSheetId], references: [id], onDelete: Cascade)
 }

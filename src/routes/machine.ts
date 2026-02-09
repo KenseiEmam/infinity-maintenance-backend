@@ -23,10 +23,11 @@ router.post('/', async (req: Request, res: Response) => {
 
 // GET machines (by customer or serial)
 router.get('/', async (req: Request, res: Response) => {
-  const { customerId, serialNumber } = req.query;
-
+  const { customerId, serialNumber, page = '1', pageSize = '10'} = req.query;
+  const pageNum = parseInt(page as string, 10);
+  const size = parseInt(pageSize as string, 10);
   try {
-    const machines = await prisma.machine.findMany({
+    const [machines,count] = await Promise.all([prisma.machine.findMany({
       where: {
         customerId: customerId as string | undefined,
         serialNumber: serialNumber
@@ -37,9 +38,16 @@ router.get('/', async (req: Request, res: Response) => {
         customer: true,
         model: { include: { manufacturer: true } },
       },
-    });
+        skip: (pageNum - 1) * size,
+        take: size,
+    }),  prisma.machine.count({ where: {
+        customerId: customerId as string | undefined,
+        serialNumber: serialNumber
+          ? { contains: serialNumber as string, mode: 'insensitive' }
+          : undefined,
+      } }) ])
 
-    res.json(machines);
+    res.json({machines, count});
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
