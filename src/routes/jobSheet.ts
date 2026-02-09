@@ -93,7 +93,15 @@ router.get('/:id', async (req: Request, res: Response) => {
       where: { id },
       include: {
         customer: true,
-        machine: true,
+        machine: {
+          include: {
+            model: {
+             include: {
+              manufacturer:true
+             }
+            },
+          },
+        },
         engineer: true,
         spareParts: true,
         laserData: true,
@@ -181,7 +189,15 @@ router.patch('/:id', async (req: Request, res: Response) => {
       },
       include: {
         customer: true,
-        machine: true,
+        machine: {
+          include: {
+            model: {
+             include: {
+              manufacturer:true
+             }
+            },
+          },
+        },
         engineer: true,
         spareParts: true,
         laserData: true,

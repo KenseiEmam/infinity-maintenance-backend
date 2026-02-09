@@ -36,6 +36,7 @@ enum UserRole {
 enum ServiceType {
   INSTALLATION
   CONTRACT
+  WARRANTY
   PAID
 }
 model Customer {
