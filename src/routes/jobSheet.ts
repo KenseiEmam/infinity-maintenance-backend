@@ -8,10 +8,24 @@ const router = Router();
 // -------------------------
 router.post('/', async (req: Request, res: Response) => {
   const { callId, spareParts, laserData, ...jobSheetData } = req.body;
+   // get last sheet by id (string but numeric order)
+    const lastSheet = await prisma.jobSheet.findFirst({
+      orderBy: { id: 'desc' },
+      select: { id: true },
+    });
 
+    const lastNumber = lastSheet ? parseInt(lastSheet.id, 10) : 0;
+    const nextNumber = lastNumber + 1;
+
+    if (nextNumber > 99999) {
+      return res.status(400).json({ error: 'Maximum sheet number reached (99999)' });
+    }
+
+    const paddedId = String(nextNumber).padStart(5, '0');
   try {
     const jobSheet = await prisma.jobSheet.create({
       data: {
+        id: paddedId,
         ...jobSheetData,
         date: new Date(jobSheetData.date),
         callId: callId || undefined,
@@ -130,7 +144,6 @@ router.patch('/:id', async (req: Request, res: Response) => {
     laserData = [],
     customerId,
     machineId,
-    serviceType,
     engineerId,
     attachments,
     customer,

@@ -23,13 +23,14 @@ router.post('/', async (req: Request, res: Response) => {
 
 // GET machines (by customer or serial)
 router.get('/', async (req: Request, res: Response) => {
-  const { customerId, serialNumber, page = '1', pageSize = '10'} = req.query;
+  const { customerId, modelId, serialNumber, page = '1', pageSize = '10'} = req.query;
   const pageNum = parseInt(page as string, 10);
   const size = parseInt(pageSize as string, 10);
   try {
     const [machines,count] = await Promise.all([prisma.machine.findMany({
       where: {
         customerId: customerId as string | undefined,
+        modelId: modelId as string | undefined,
         serialNumber: serialNumber
           ? { contains: serialNumber as string, mode: 'insensitive' }
           : undefined,
