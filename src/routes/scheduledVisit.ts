@@ -19,9 +19,9 @@ router.post('/', async (req: Request, res: Response) => {
     start.setHours(0, 0, 0, 0)
 
     const end = new Date(start)
-    end.setHours(23, 59, 59, 999)
+    end.setHours(0, 59, 59, 999)
 
-    // 🔥 Prevent duplicate bookings for the same day
+    // 🔥 Prevent duplicate bookings for the same hour
     const existing = await prisma.scheduledVisit.findFirst({
       where: {
         visitDate: {
@@ -33,7 +33,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     if (existing) {
       return res.status(409).json({
-        error: 'This date is already booked',
+        error: 'This slot is already booked',
       })
     }
 
